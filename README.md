@@ -44,6 +44,21 @@ suno credits --json
 
 Do **not** commit cookies or tokens.
 
+
+## Full Suno CLI Coverage
+
+This wrapper now documents and exposes the full `suno-cli` v0.5.7 command surface:
+
+- Create: `generate`, `describe`, `lyrics`, `extend`, `concat`, `cover`, `remaster`, `stems`
+- Browse/inspect: `list`, `search`, `info`, `persona`, `status`, `credits`, `models`, `timed-lyrics`
+- Manage: `download`, `set`, `publish`, `delete`
+- Auth/config/agent: `auth`, `config`, `agent-info`, `install-skill`, `update`
+
+See:
+
+- [`docs/full-suno-cli-reference.md`](docs/full-suno-cli-reference.md)
+- [`docs/agent-playbook.md`](docs/agent-playbook.md)
+
 ## Commands
 
 ```bash
