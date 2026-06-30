@@ -12,36 +12,53 @@ cmd="${1:-}"
 if [[ -z "$cmd" ]]; then
   cat >&2 <<USAGE
 Usage:
+  $0 auth [args...]
+  $0 refresh
   $0 credits
   $0 models
   $0 list [args...]
-  $0 refresh
-  $0 generate [suno generate args...]
-  $0 download [suno download args...]
+  $0 search <query> [args...]
+  $0 info <clip_id> [args...]
+  $0 status [clip_ids...] [args...]
+  $0 persona <persona_id> [args...]
+  $0 timed-lyrics <clip_id> [args...]
+  $0 lyrics [args...]
+  $0 describe [args...]
+  $0 generate [args...]
+  $0 extend [args...]
+  $0 concat [args...]
+  $0 cover [args...]
+  $0 remaster [args...]
+  $0 stems [args...]
+  $0 download [args...]
+  $0 set [args...]
+  $0 publish [args...]
+  $0 delete [args...]
+  $0 config [args...]
+  $0 agent-info
+  $0 update [args...]
 USAGE
   exit 2
 fi
 shift || true
 
 case "$cmd" in
-  credits)
-    exec "$SUNO_BIN" credits --json "$@"
-    ;;
-  models)
-    exec "$SUNO_BIN" models --json "$@"
-    ;;
-  list)
-    exec "$SUNO_BIN" list --json "$@"
-    ;;
   refresh)
     exec "$SUNO_BIN" auth --refresh --json "$@"
     ;;
-  generate)
-    echo "[suno-safe] generation may spend credits" >&2
-    exec "$SUNO_BIN" generate "$@"
-    ;;
-  download)
-    exec "$SUNO_BIN" download "$@"
+  credits|models|list|search|info|status|persona|timed-lyrics|lyrics|describe|generate|extend|concat|cover|remaster|stems|download|set|publish|delete|config|auth|agent-info|install-skill|update)
+    case "$cmd" in
+      generate|describe|extend|concat|cover|remaster|stems)
+        echo "[suno-safe] creation command may spend credits: $cmd" >&2
+        ;;
+      delete)
+        echo "[suno-safe] destructive command: delete" >&2
+        ;;
+      set|publish)
+        echo "[suno-safe] mutating command: $cmd" >&2
+        ;;
+    esac
+    exec "$SUNO_BIN" "$cmd" "$@"
     ;;
   *)
     echo "Unknown command: $cmd" >&2
