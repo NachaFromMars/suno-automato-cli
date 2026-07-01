@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "name": "Bolero Vol.1 - Dem Mua Sai Gon",
+  "slug": "Bolero-Vol-1-Dem-Mua-Sai-Gon",
+  "genre": "Bolero",
+  "description": "Auto-generated album batch: 8 tracks per genre/album.",
+  "projects": [],
+  "remote_album_sync": "synced_suno_playlist",
+  "created_at": "2026-06-30T18:38:16+02:00",
+  "updated_at": "2026-07-01T13:24:32+02:00",
+  "remote_playlist_id": "33b426bf-fee5-4bb5-a494-4094e2fb9048",
+  "remote_synced_at": "2026-07-01T13:24:36+02:00",
+  "track_count": 2,
+  "project_count": 2,
+  "tracks": [
+    {
+      "title": "Mưa Đêm Sài Gòn #1",
+      "project_title": "Mưa Đêm Sài Gòn",
+      "take_no": 1,
+      "label": "#1",
+      "suno_id": "1377d60f-ae60-400d-ad3f-4e80cec574f6",
+      "audio_path": "/root/.openclaw/workspace/suno-automato-cli/suno-library/Bolero/2026-06-30_Mua-Dem-Sai-Gon/audio/Mua-Dem-Sai-Gon__01.mp3",
+      "status": "draft",
+      "cover_path": "/root/.openclaw/workspace/suno-automato-cli/suno-library/Bolero/2026-06-30_Mua-Dem-Sai-Gon/cover/Mua-Dem-Sai-Gon__01.jpeg",
+      "image_url": "https://cdn2.suno.ai/image_1377d60f-ae60-400d-ad3f-4e80cec574f6.jpeg",
+      "style_score": 8.3,
+      "lyric_score": 8.0
+    },
+    {
+      "title": "Mưa Đêm Sài Gòn #2",
+      "project_title": "Mưa Đêm Sài Gòn",
+      "take_no": 2,
+      "label": "#2",
+      "suno_id": "610b0d9d-a9f1-48e7-acb2-50b447e1f55f",
+      "audio_path": "/root/.openclaw/workspace/suno-automato-cli/suno-library/Bolero/2026-06-30_Mua-Dem-Sai-Gon/audio/Mua-Dem-Sai-Gon__02.mp3",
+      "status": "draft",
+      "cover_path": "/root/.openclaw/workspace/suno-automato-cli/suno-library/Bolero/2026-06-30_Mua-Dem-Sai-Gon/cover/Mua-Dem-Sai-Gon__02.jpeg",
+      "image_url": "https://cdn2.suno.ai/image_610b0d9d-a9f1-48e7-acb2-50b447e1f55f.jpeg",
+      "style_score": 8.3,
+      "lyric_score": 8.0
+    }
+  ]
+}
