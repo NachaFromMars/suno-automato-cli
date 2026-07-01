@@ -357,7 +357,8 @@ RÀNG BUỘC CỨNG:
 - Hook tip bắt buộc dùng: {hook_tip}
 - Energy/section map: {energy_map}
 - Cấu trúc section bắt buộc (dùng section labels tiếng Anh trong [] cho từng phần): {structure}
-- BẮT BUỘC: mỗi phần mở đầu bằng một dòng [Section] (vd [Intro], [Verse 1], [Chorus], [Bridge], [Outro]); tối thiểu 5 section; phải có Intro và Chorus.
+- BẮT BUỘC: mỗi phần mở đầu bằng một dòng [Section] (vd [Intro], [Verse 1], [Chorus], [Bridge], [Outro]); tối thiểu 5 section; phải có Intro, Chorus, và một hook rõ ràng ([Hook] hoặc Chorus đóng vai hook).
+- BẮT BUỘC có một hook bắt tai (random loại: vocal hook/earworm, instrumental hook, chant, post-chorus tag, call-response, title-drop — chọn hợp thể loại).
 - CHỈ trả lyrics thuần + section labels trong lyrics; KHÔNG kèm ```; KHÔNG kèm field style trong lyrics.
 
 BÀI LIỀN TRƯỚC ĐỂ TRÁNH NA NÁ:
