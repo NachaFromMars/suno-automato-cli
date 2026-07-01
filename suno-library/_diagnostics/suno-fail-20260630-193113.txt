@@ -1,0 +1,15 @@
+url=https://suno.com/create
+reason=batch_failure_captcha_or_login
+
+Log in
+Home
+Explore
+Create
+Studio
+Library
+Hooks
+Labs
+Terms & Policies
+More
+0:00
+--:--
