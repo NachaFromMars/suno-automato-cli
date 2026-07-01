@@ -21,3 +21,6 @@ downloads/
 .DS_Store
 __pycache__/
 *.pyc
+
+# Managed local library output; keep code/docs in git, not generated songs.
+suno-library/
