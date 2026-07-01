@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "name": "Restaurant Jazz Instrument Vol.1 - Lounge Dinner",
+  "slug": "Restaurant-Jazz-Instrument-Vol-1-Lounge-Dinner",
+  "genre": "Restaurant-Jazz-Instrument",
+  "description": "Auto-generated album batch: 8 tracks per genre/album.",
+  "projects": [],
+  "remote_album_sync": "synced_suno_playlist",
+  "created_at": "2026-06-30T19:45:38+02:00",
+  "updated_at": "2026-07-01T13:24:32+02:00",
+  "remote_playlist_id": "12477439-6d46-499c-8c6d-629750443371",
+  "remote_synced_at": "2026-07-01T13:24:46+02:00",
+  "track_count": 0,
+  "project_count": 1,
+  "tracks": []
+}
