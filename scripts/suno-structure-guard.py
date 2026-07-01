@@ -43,8 +43,9 @@ def analyze(raw: str):
     has_chorus = any("chorus" in tag.lower() or "hook" in tag.lower() for tag in tags)
     has_intro = any("intro" in tag.lower() for tag in tags)
     has_outro = any("outro" in tag.lower() or "coda" in tag.lower() for tag in tags)
+    has_hook = any("hook" in tag.lower() for tag in tags) or any("chorus" in tag.lower() for tag in tags)
     pollution = bool(re.search(r"```|\"style\"|\"lyrics\"|^\s*\{", cleaned)) or cleaned.strip().startswith("{")
-    ok = (len(valid) >= 5) and has_chorus and has_intro and not pollution
+    ok = (len(valid) >= 5) and has_chorus and has_intro and has_hook and not pollution
     return {
         "ok": ok,
         "cleaned": cleaned,
@@ -53,6 +54,7 @@ def analyze(raw: str):
         "has_intro": has_intro,
         "has_chorus": has_chorus,
         "has_outro": has_outro,
+        "has_hook": has_hook,
         "pollution": pollution,
         "tags": tags,
     }
