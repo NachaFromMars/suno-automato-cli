@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / "suno-library" / "batch-state.json"
 LYRICS_DIR = ROOT / "suno-library" / "_batch-lyrics"
 LIB = ROOT / "scripts" / "suno-lib.sh"
+PROMPT_GUARD = Path("/root/.openclaw/workspace/suno-cli/scripts/suno_prompt_guard.py")
 SEED_ENGINE = ROOT / "scripts" / "suno-seed-engine.py"
 TARGET_TRACKS_PER_ALBUM = 8
 # Per-album track-count overrides (album name -> target takes). Lets an album close out
@@ -49,11 +50,24 @@ def save_state(state):
 def run(cmd):
     env = dict(__import__("os").environ)
     # Snap Chromium may start only with sandbox/dev-shm flags; use this when the CLI captcha solver launches Chrome.
-    env.setdefault("CHROME_PATH", str(ROOT / "scripts" / "chrome-for-suno.sh"))
-    env.setdefault("SUNO_CHROME_PATH", str(ROOT / "scripts" / "chrome-for-suno.sh"))
+    env.setdefault("CHROME_PATH", "/root/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome")
+    env.setdefault("SUNO_CHROME_PATH", "/root/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome")
     env.setdefault("CHROME_FLAGS", "--no-sandbox --disable-dev-shm-usage --disable-gpu --no-zygote")
     env.setdefault("SUNO_CHROME_FLAGS", "--no-sandbox --disable-dev-shm-usage --disable-gpu --no-zygote")
-    proc = subprocess.run(cmd, cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    # Suno CLI captcha solver launches Chrome in HEADED mode; it needs an X display.
+    if not env.get("DISPLAY"):
+        env["DISPLAY"] = ":99"
+        env.setdefault("XAUTHORITY", "/tmp/xvfb-run.cdSws5/Xauthority")
+    timeout = 120
+    # Seed/audit/guard helpers must never stall the whole generation pipeline.
+    if cmd and any(str(cmd[0]).endswith(name) for name in ["suno-seed-engine.py", "suno-structure-guard.py", "suno-prev-lyric-guard.py", "suno-style-guard.py", "suno-audit.py", "suno-lyric-audit.py", "suno_prompt_guard.py"]):
+        timeout = 45
+    if cmd and ("generate" in [str(x) for x in cmd]):
+        timeout = 900
+    try:
+        proc = subprocess.run(cmd, cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        return 124, (e.stdout or ""), ((e.stderr or "") + f"\nTIMEOUT after {timeout}s: {' '.join(map(str, cmd))}")
     return proc.returncode, proc.stdout, proc.stderr
 
 
@@ -181,6 +195,80 @@ def load_seeded_job(album, base_job, job_index):
     upgraded["idea_seed"] = seed.get("idea_seed", {})
     return upgraded
 
+
+def structured_prompt_for(album: dict, job: dict) -> str:
+    """Return a Suno tags prompt that preserves the mandatory 11-block PromptStyle contract."""
+    genre = album.get("genre", "Cinematic")
+    raw = (job.get("tags") or "").strip()
+    title = job.get("title", "Untitled")
+    lower = (genre + " " + raw).lower()
+    if "cinematic" in lower or "maxmax" in lower:
+        dna = f"{genre} epic cinematic Vietnamese hybrid trailer score, 88-100 BPM, orchestral folk-soul"
+        singer = "heroic Vietnamese lead vocal with choir support"
+        vocal = "intimate verse, lifted pre, belted chorus, final choir hook"
+        rhythm = "taiko pulse, sub impacts, cinematic snare, low string ostinato"
+        palette = "đàn bầu/đàn tranh/erhu color, tremolo strings, low brass, horns, choir, risers"
+        mix = "clear vocal front, separated low-end, wide film-score master"
+    elif "thieu" in lower or "nhi" in lower:
+        dna = "Vietnamese children cinematic folk-pop, bright 100 BPM, playful orchestral-acoustic"
+        singer = "warm childlike Vietnamese lead, innocent but not childish"
+        vocal = "clear verse diction, singable pre, simple repeatable chorus, group answer"
+        rhythm = "light handclap, soft kick, toy percussion, bouncing bass"
+        palette = "glockenspiel, đàn tranh plucks, ukulele/guitar, soft strings, children choir"
+        mix = "clean friendly vocal, airy stereo, soft low-end, polished family master"
+    elif "bolero" in lower:
+        dna = "Vietnamese bolero cinematic ballad, slow 68-76 BPM, southern night soul"
+        singer = "mature Vietnamese lead with intimate phrasing and emotional restraint"
+        vocal = "close verse, luyến láy tasteful, rising chorus, tender final adlibs"
+        rhythm = "bolero guitar rhythm, soft percussion, brushed snare, warm bass"
+        palette = "nylon guitar, accordion/strings, đàn bầu touches, soft piano"
+        mix = "warm analog vocal, clear diction, gentle reverb, no karaoke harshness"
+    else:
+        dna = f"Vietnamese {genre} premium fusion, distinctive tempo, non-generic arrangement"
+        singer = "expressive Vietnamese lead vocal with clear identity"
+        vocal = "focused verse, lifted pre-chorus, memorable chorus, final adlibs"
+        rhythm = "distinctive drums, bass motion, humanized groove, section contrast"
+        palette = "signature motif instrument, supporting harmony, tasteful texture layers"
+        mix = "clear vocal, separated low-end, dynamic contrast, premium master"
+    motif = job.get('idea_seed', {}).get('image_vi') or f"fresh concept for {title}, no recycled sun/same-child imagery"
+    hook = "title-drop hook, short repeatable phrase, call-response answer, emotional release"
+    arrange = "motif intro→verse story→pre-lift→full chorus→stripped bridge→final lift→clean outro"
+    mood = "specific opening emotion→tension build→release→luminous ending"
+    avoid = job.get("exclude") or "generic stock loop, karaoke backing, muddy choir, weak hook, recycled melody, reused imagery"
+    prompt = (
+        f"Leading Genre DNA: {dna}; "
+        f"Singer Identity: {singer}; "
+        f"Vocal Register: {vocal}; "
+        f"Rhythm Section: {rhythm}; "
+        f"Signature Motif: {motif}; "
+        f"Hook Design: {hook}; "
+        f"Arrangement Map: {arrange}; "
+        f"Instrument Palette: {palette}; "
+        f"Mood Logic: {mood}; "
+        f"Mix Target: {mix}; "
+        f"Strictly Avoid: {avoid}"
+    )
+    return prompt[:995]
+
+
+def prompt_guard(album: dict, job: dict, lyric_path: Path) -> tuple[bool, dict]:
+    """Hard pre-generation gate: prompt, lyrics, playlist route, novelty must all pass."""
+    style = structured_prompt_for(album, job)
+    job["tags"] = style
+    report = {"style_len": len(style)}
+    checks = [
+        [str(PROMPT_GUARD), "precheck", "--text", style],
+        [str(PROMPT_GUARD), "lyrics-check", "--file", str(lyric_path), "--title", job.get("title", "")],
+        [str(PROMPT_GUARD), "playlist-route", "--title", job.get("title", ""), "--text", style, "--playlist", album.get("album", "")],
+        [str(PROMPT_GUARD), "novelty-check", "--title", job.get("title", ""), "--style", style, "--lyrics-file", str(lyric_path), "--history", str(ROOT / "suno-library" / "maestro-evolution.json")],
+    ]
+    for cmd in checks:
+        code, out, err = run(cmd)
+        report[cmd[1]] = {"code": code, "stdout": out[-1200:], "stderr": err[-1200:]}
+        if code != 0:
+            return False, report
+    return True, report
+
 def main():
     state = load_state()
     if state.get("done"):
@@ -230,8 +318,13 @@ def main():
             s_code, s_out, s_err = run([str(ROOT / "scripts" / "suno-structure-guard.py"), "--lyrics-file", str(cand_lyric), "--fix"])
             d_code, d_out, d_err = run([str(ROOT / "scripts" / "suno-prev-lyric-guard.py"), "--genre", candidate["genre"], "--lyrics-file", str(cand_lyric)])
             if d_code == 0 and s_code == 0:
-                passed = True
-                break
+                pg_ok, pg_report = prompt_guard(candidate, cand_job, cand_lyric)
+                if pg_ok:
+                    cand_job["prompt_guard_report"] = pg_report
+                    passed = True
+                    break
+                else:
+                    state.setdefault("guard_blocks", []).append({"at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"), "genre": candidate["genre"], "album": candidate["album"], "title": cand_job["title"], "prompt_guard_report": pg_report})
             base_job = extra_job_for(candidate, cand_ji + reseed + 1)
             cand_job = load_seeded_job(candidate, base_job, cand_ji + reseed + 1)
             cand_lyric = LYRICS_DIR / f"{candidate['genre']}_{cand_ji+1:02d}_{cand_job['title'].replace(' ', '_')}.txt"
@@ -255,16 +348,8 @@ def main():
     if ji == 0:
         run([str(LIB), "album", "create", album["album"], "--genre", album["genre"], "--description", "Auto-generated album batch: 8 tracks per genre/album."])
 
-    # Style + hook gate: every generation must ship a style prompt that names a hook.
-    import random as _rnd
-    _hook_types = [
-        "catchy vocal hook (earworm)", "instrumental hook / memorable motif",
-        "chant hook (singalong)", "post-chorus vowel tag", "call-and-response hook",
-        "title-drop hook", "riff-based hook",
-    ]
-    st_code, st_out, st_err = run([str(ROOT / "scripts" / "suno-style-guard.py"), "--style", job.get("tags", "")])
-    if st_code != 0:
-        job["tags"] = (job.get("tags", "").rstrip(". ") + f", with a {_rnd.choice(_hook_types)} as the central memorable hook").strip(", ")
+    # The new PromptStyle gate above is authoritative. Do NOT mutate job["tags"] after it passes;
+    # otherwise the submitted prompt can diverge from the audited prompt.
 
     cmd = [
         str(LIB), "generate",
@@ -287,6 +372,7 @@ def main():
         "album": album["album"],
         "title": job["title"],
         "idea_seed": job.get("idea_seed", {}),
+        "prompt_guard_report": job.get("prompt_guard_report", {}),
         "command": cmd,
         "exit_code": code,
         "stdout_tail": out[-4000:],
@@ -294,6 +380,21 @@ def main():
     }
     state.setdefault("runs", []).append(record)
     if code == 0:
+        ids = []
+        try:
+            import re as _re
+            ids = list(dict.fromkeys(_re.findall(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", out)))
+        except Exception:
+            ids = []
+        if ids:
+            pc_code, pc_out, pc_err = run([str(PROMPT_GUARD), "postcheck", *ids])
+            record["postcheck"] = {"code": pc_code, "stdout": pc_out[-2000:], "stderr": pc_err[-1000:]}
+            if pc_code != 0:
+                record["exit_code"] = 4
+                state["runs"][-1] = record
+                save_state(state)
+                print(json.dumps({"status":"error","message":"postcheck failed; generated clips are quarantined/not counted","record":record}, ensure_ascii=False, indent=2))
+                return 4
         # Audit prompt richness and store lessons in metadata + global Maestro evolution memory.
         project_dir = ROOT / "suno-library" / album["genre"] / f"{datetime.now().strftime('%Y-%m-%d')}_{slugify(job['title'])}"
         if project_dir.exists():
