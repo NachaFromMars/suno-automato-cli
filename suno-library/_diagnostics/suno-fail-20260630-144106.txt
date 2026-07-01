@@ -1,0 +1,10 @@
+url=https://suno.com/create
+reason=batch_failure_captcha_or_login
+
+We're verifying your browser
+
+Vercel Security Checkpoint
+
+|
+
+sin1::1782823269-vFTDQ0kIh5VkFYEsL9nFJG9O8sLQBWAE
