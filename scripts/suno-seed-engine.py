@@ -182,6 +182,15 @@ LYRIC_CRAFT_TECHNIQUES = [
  'jazz instrumental prompt: no lyric story, instead describe melodic arc and solo handoffs',
 ]
 
+STRUCTURE_TEMPLATES = [
+ 'Intro -> Verse 1 -> Pre-Chorus -> Chorus -> Verse 2 -> Pre-Chorus -> Chorus -> Bridge -> Final Chorus -> Outro',
+ 'Chorus (cold open) -> Verse 1 -> Chorus -> Verse 2 -> Bridge -> Final Chorus -> Outro',
+ 'Intro -> Verse 1 -> Pre-Chorus -> Chorus -> Verse 2 -> Bridge -> Final Chorus -> Outro',
+ 'Intro -> Verse 1 -> Pre-Chorus -> Chorus -> Post-Chorus -> Verse 2 -> Chorus -> Post-Chorus -> Bridge -> Final Chorus + Post-Chorus',
+ 'Intro (instruments) -> Verse 1 -> Spoken-Sung Dialogue -> Pre-Chorus -> Chorus -> Verse 2 -> Bridge -> Final Chorus',
+ 'Intro -> Verse 1 -> Hook -> Verse 2 -> Bridge -> Hook -> Outro',
+]
+
 HOOK_TECHNIQUE_BANK = [
  'title on downbeat, then consequence line',
  'two-word hook repeated with different emotional color',
@@ -328,6 +337,7 @@ def llm_generate_lyrics(genre, title, seed_pack, iteration, vocalist, hook_shape
     craft = pick(f'{genre}|{title}|{iteration}|craft', LYRIC_CRAFT_TECHNIQUES)
     hook_tip = pick(f'{genre}|{title}|{iteration}|hooktip', HOOK_TECHNIQUE_BANK)
     energy_map = pick(f'{genre}|{title}|{iteration}|energy', SECTION_ENERGY_BANK)
+    structure = pick(f'{genre}|{title}|{iteration}|struct', STRUCTURE_TEMPLATES)
     prompt = f"""Viết lyrics tiếng Việt hoàn toàn mới cho Suno.
 
 RÀNG BUỘC CỨNG:
@@ -346,6 +356,9 @@ RÀNG BUỘC CỨNG:
 - Kỹ thuật lyric bắt buộc dùng: {craft}
 - Hook tip bắt buộc dùng: {hook_tip}
 - Energy/section map: {energy_map}
+- Cấu trúc section bắt buộc (dùng section labels tiếng Anh trong [] cho từng phần): {structure}
+- BẮT BUỘC: mỗi phần mở đầu bằng một dòng [Section] (vd [Intro], [Verse 1], [Chorus], [Bridge], [Outro]); tối thiểu 5 section; phải có Intro và Chorus.
+- CHỈ trả lyrics thuần + section labels trong lyrics; KHÔNG kèm ```; KHÔNG kèm field style trong lyrics.
 
 BÀI LIỀN TRƯỚC ĐỂ TRÁNH NA NÁ:
 <<<
@@ -371,6 +384,10 @@ Trả về JSON duy nhất dạng:
                 text = obj['outputs'][0].get('text', '')
             if isinstance(text, dict): text = text.get('lyrics','')
             text = str(text).strip()
+            # Strip markdown code fences the model may wrap around JSON/lyrics.
+            fence = re.match(r'^```[a-zA-Z]*\s*(.*?)\s*```$', text, re.S)
+            if fence:
+                text = fence.group(1).strip()
             # Provider wrappers often return text that itself is JSON.
             if text.startswith('{'):
                 try:
