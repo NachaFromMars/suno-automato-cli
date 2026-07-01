@@ -221,11 +221,15 @@ def main():
         cand_lyric = LYRICS_DIR / f"{candidate['genre']}_{cand_ji+1:02d}_{cand_job['title'].replace(' ', '_')}.txt"
         cand_lyric.write_text(cand_job["lyrics"], encoding="utf-8")
 
+        # Structure gate first: clean JSON/code-fence pollution and require rich [section] tags.
+        run([str(ROOT / "scripts" / "suno-structure-guard.py"), "--lyrics-file", str(cand_lyric), "--fix"])
+
         # Hard diversity gate: if the candidate is too similar to recent same-genre work, reseed up to 8 times.
         passed = False
         for reseed in range(8):
+            s_code, s_out, s_err = run([str(ROOT / "scripts" / "suno-structure-guard.py"), "--lyrics-file", str(cand_lyric), "--fix"])
             d_code, d_out, d_err = run([str(ROOT / "scripts" / "suno-prev-lyric-guard.py"), "--genre", candidate["genre"], "--lyrics-file", str(cand_lyric)])
-            if d_code == 0:
+            if d_code == 0 and s_code == 0:
                 passed = True
                 break
             base_job = extra_job_for(candidate, cand_ji + reseed + 1)
