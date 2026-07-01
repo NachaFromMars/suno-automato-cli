@@ -255,6 +255,17 @@ def main():
     if ji == 0:
         run([str(LIB), "album", "create", album["album"], "--genre", album["genre"], "--description", "Auto-generated album batch: 8 tracks per genre/album."])
 
+    # Style + hook gate: every generation must ship a style prompt that names a hook.
+    import random as _rnd
+    _hook_types = [
+        "catchy vocal hook (earworm)", "instrumental hook / memorable motif",
+        "chant hook (singalong)", "post-chorus vowel tag", "call-and-response hook",
+        "title-drop hook", "riff-based hook",
+    ]
+    st_code, st_out, st_err = run([str(ROOT / "scripts" / "suno-style-guard.py"), "--style", job.get("tags", "")])
+    if st_code != 0:
+        job["tags"] = (job.get("tags", "").rstrip(". ") + f", with a {_rnd.choice(_hook_types)} as the central memorable hook").strip(", ")
+
     cmd = [
         str(LIB), "generate",
         "--genre", album["genre"],
