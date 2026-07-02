@@ -370,9 +370,16 @@ Trả về JSON duy nhất dạng:
 {{"lyrics":"..."}}
 """
     models = [os.environ.get('SUNO_LYRIC_MODEL','gptplus4/cx/gpt-5.5'), 'router9/cc/claude-sonnet-4-6', 'openai/gpt-5.4-mini', 'venice/openai-gpt-4o-mini-2024-07-18']
+    # F-08: keep total LLM time under the batch-runner's 240s seed budget.
+    # Global deadline 210s; each model gets min(90s, remaining) so we never get SIGKILLed mid-chain.
+    import time as _time
+    _deadline = _time.monotonic() + 210
     for model in models:
+        _remaining = _deadline - _time.monotonic()
+        if _remaining < 10:
+            break
         try:
-            proc = subprocess.run(['openclaw','infer','model','run','--gateway','--model',model,'--prompt',prompt,'--json'], cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
+            proc = subprocess.run(['openclaw','infer','model','run','--gateway','--model',model,'--prompt',prompt,'--json'], cwd=str(ROOT), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=min(90, _remaining))
             raw = proc.stdout.strip()
             if proc.returncode != 0 or not raw:
                 continue
@@ -409,7 +416,7 @@ def build_lyrics(genre, title, seed_pack, iteration):
     texture = pick(title+str(iteration)+'rhyme', RHYME_TEXTURES)
     hook = pick(title+str(iteration)+'hook', HOOK_SHAPES)
     vocalist = vocal_choice(genre, iteration)
-    if genre in ('Instrumental','Relax-Sleep'):
+    if genre in ('Instrumental','Relax-Sleep','Restaurant-Jazz-Instrument'):
         return f"[Instrumental Intro - {idea_vi}, signature motif]\n\n[Instrumental Section A - establish texture, slow motion]\n\n[Instrumental Section B - add counter-melody, wider stereo]\n\n[Instrumental Bridge - strip to one motif, deep space]\n\n[Instrumental Final Section - emotional lift without vocals]\n\n[Instrumental Outro - clean slow fade]"
     llm = llm_generate_lyrics(genre, title, seed_pack, iteration, vocalist, hook, texture)
     if llm:

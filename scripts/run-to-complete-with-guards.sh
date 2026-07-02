@@ -2,9 +2,22 @@
 set -uo pipefail
 ROOT="/root/.openclaw/workspace/suno-automato-cli"
 LOG="$ROOT/suno-library/run-to-complete-$(date +%Y%m%d-%H%M%S).log"
+LOCK="$ROOT/suno-library/.run-to-complete.lock"
+
+# F-04: single-instance lock — never run two batch loops concurrently.
+exec 9>"$LOCK"
+if ! flock -n 9; then
+  echo "[locked] another run-to-complete instance holds $LOCK; exiting" | tee -a "$LOG"
+  exit 75
+fi
+
 export DISPLAY="${DISPLAY:-:99}"
-export XAUTHORITY="${XAUTHORITY:-/tmp/xvfb-run.cdSws5/Xauthority}"
-echo "[start] $(date -Is) DISPLAY=$DISPLAY" | tee -a "$LOG"
+# F-09: resolve the newest live xvfb-run Xauthority dynamically (survives reboots).
+if [[ -z "${XAUTHORITY:-}" ]]; then
+  XAUTH_NEWEST="$(ls -1t /tmp/xvfb-run.*/Xauthority 2>/dev/null | head -1 || true)"
+  [[ -n "$XAUTH_NEWEST" ]] && export XAUTHORITY="$XAUTH_NEWEST"
+fi
+echo "[start] $(date -Is) DISPLAY=$DISPLAY XAUTHORITY=${XAUTHORITY:-unset}" | tee -a "$LOG"
 for i in $(seq 1 60); do
   echo "[run $i] $(date -Is)" | tee -a "$LOG"
   timeout 1000 python3 "$ROOT/scripts/suno-batch-runner.py" >>"$LOG" 2>&1 || echo "[run $i] runner rc=$?" | tee -a "$LOG"
