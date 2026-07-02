@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Guard Reports · Suno Automato{% endblock %}
+{% block content %}
+<h1>Guard Reports</h1>
+<div class="sub">History of guard gate runs (validate + submission gates) with failure breakdown.</div>
+
+<div class="cards" style="margin-bottom:18px">
+  <div class="card"><div class="label">Total runs</div><div class="value">{{ stats.total }}</div></div>
+  <div class="card"><div class="label">Passed</div><div class="value" style="color:var(--ok)">{{ stats.passed }}</div></div>
+  <div class="card"><div class="label">Blocked</div><div class="value" style="color:var(--err)">{{ stats.failed }}</div></div>
+</div>
+
+<div class="flex" style="margin-bottom:10px">
+  {% for s in ['all','passed','failed'] %}
+  <a class="badge {{ 'b-accent' if show == s else 'b-muted' }}" href="/reports?show={{ s }}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>At</th><th>Source</th><th>Title</th><th>Genre</th><th>Result</th><th>Failing gates</th><th>Job</th></tr></thead>
+  <tbody>
+    {% for r in reports %}
+    <tr>
+      <td class="small muted">{{ r.created_at[:19].replace('T',' ') }}</td>
+      <td class="small">{{ r.source }}</td>
+      <td>{{ r.title }}</td>
+      <td class="small muted">{{ r.genre }}</td>
+      <td>{% if r.passed %}<span class="badge b-ok">PASS</span>{% else %}<span class="badge b-err">BLOCK</span>{% endif %}</td>
+      <td class="small">
+        {% if not r.passed and r.report.gates is defined %}
+          {% for gname, gate in r.report.gates.items() if not gate.passed %}<span class="badge b-err">{{ gname }}</span> {% endfor %}
+        {% endif %}
+      </td>
+      <td>{% if r.job_id %}<a href="/jobs/{{ r.job_id }}"><code class="small">{{ r.job_id }}</code></a>{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="muted">No guard runs recorded yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Novelty history (last {{ novelty.entries | length }} of {{ novelty.total }})</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Created</th><th>Title</th><th>Genre</th><th>Album</th><th>Style excerpt</th></tr></thead>
+  <tbody>
+    {% for n in novelty.entries %}
+    <tr>
+      <td class="small muted">{{ (n.created_at or '')[:19].replace('T',' ') }}</td>
+      <td>{{ n.title }}</td>
+      <td class="small muted">{{ n.genre }}</td>
+      <td class="small muted">{{ n.album }}</td>
+      <td class="small muted">{{ n.style_excerpt }}…</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

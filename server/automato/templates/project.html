@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title }} · Suno Automato{% endblock %}
+{% block content %}
+<h1>{{ p.title }}</h1>
+<div class="sub">{{ p.genre }} · {{ p.album }} · status: {{ p.status }} · created {{ p.created_at[:19].replace('T',' ') }}</div>
+
+<h2>Takes ({{ p.takes | length }})</h2>
+{% for t in p.takes %}
+<div class="card mt">
+  <div class="flex">
+    {% if t.cover_file %}
+    <img src="/api/v1/media/{{ p.project_id }}/cover/{{ t.cover_file }}" alt="" style="width:64px;height:64px;border-radius:8px;object-fit:cover">
+    {% endif %}
+    <div class="grow">
+      <b>{{ t.title }}</b>
+      <div class="small muted">take {{ t.take_no }} · {{ t.status }} · suno_id <code>{{ t.suno_id }}</code></div>
+    </div>
+  </div>
+  {% if t.audio_exists %}
+  <audio controls preload="none" src="/api/v1/media/{{ p.project_id }}/audio/{{ t.audio_file }}"></audio>
+  {% else %}
+  <div class="small" style="color:var(--warn)">audio file missing on disk</div>
+  {% endif %}
+</div>
+{% else %}
+<div class="muted">No takes imported.</div>
+{% endfor %}
+
+{% if p.quarantined_takes %}
+<h2>Quarantined takes ({{ p.quarantined_takes | length }})</h2>
+{% for t in p.quarantined_takes %}
+<div class="card mt" style="border-color: rgba(245,182,83,.4)">
+  <b>{{ t.get('title','') }}</b> <span class="badge b-warn">quarantined</span>
+  <div class="small muted">suno_id <code>{{ t.get('suno_id','') }}</code></div>
+</div>
+{% endfor %}
+{% endif %}
+
+<h2>Style prompt</h2>
+<pre class="code">{{ p.style_prompt }}</pre>
+
+<h2>Tags</h2>
+<div class="flex">{% for tag in p.tags %}<span class="badge b-muted">{{ tag }}</span>{% endfor %}</div>
+
+<div class="mt"><a href="/library">← back to library</a></div>
+{% endblock %}

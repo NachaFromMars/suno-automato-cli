@@ -1,0 +1,54 @@
+{% if hint %}
+  <div class="muted small">{{ hint }}</div>
+{% elif report %}
+  <div {% if report.passed %}data-guard-pass="true"{% endif %}>
+    <div class="flex" style="margin-bottom:10px">
+      {% if report.passed %}
+        <span class="badge b-ok" style="font-size:.9rem">✓ ALL GATES PASS</span>
+      {% else %}
+        <span class="badge b-err" style="font-size:.9rem">✕ GUARD BLOCKED</span>
+      {% endif %}
+      <span class="muted small">{{ report.at }}</span>
+    </div>
+
+    {% if blocks %}
+    <div class="small muted" style="margin-bottom:4px">11 PromptStyle blocks</div>
+    <div class="blocks-grid">
+      {% for name, on in blocks.items() %}
+        <span class="block-chip {{ 'on' if on else 'off' }}">{{ '✓' if on else '✕' }} {{ name }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <ul class="gate-list">
+      {% for gname, gate in report.gates.items() %}
+      <li class="{{ 'gate-pass' if gate.passed else 'gate-fail' }}">
+        <span class="gate-ic">{{ '✓' if gate.passed else '✕' }}</span>
+        <div>
+          <b>{{ gname.replace('_',' ') }}</b>
+          <span class="muted small">(rc={{ gate.exit_code }})</span>
+          {% if gate.detail and not gate.passed %}
+            <div class="gate-detail">
+              {% if gate.detail.missing %}missing: {{ gate.detail.missing | join(', ') }}{% endif %}
+              {% if gate.detail.reason %}{{ gate.detail.reason }}{% endif %}
+              {% if gate.detail.hits %}novelty hits:
+                {% for h in gate.detail.hits[:5] %}
+                  [{{ h.get('type','hit') }}{% if h.get('previous_title') %} vs “{{ h.previous_title }}”{% endif %}{% if h.get('similarity') %} sim={{ '%.2f' % h.similarity }}{% endif %}]
+                {% endfor %}
+              {% endif %}
+              {% if not gate.detail.missing and not gate.detail.reason and not gate.detail.hits %}{{ gate.detail | tojson | truncate(300) }}{% endif %}
+            </div>
+          {% elif gate.stderr and not gate.passed %}
+            <div class="gate-detail">{{ gate.stderr | truncate(300) }}</div>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if report.passed %}
+      <div class="small mt" style="color:var(--ok)">Submit unlocked — the identical gate re-runs server-side on submission.</div>
+    {% else %}
+      <div class="small mt" style="color:var(--err)">Fix the failing gates above; the submit button stays locked until PASS.</div>
+    {% endif %}
+  </div>
+{% endif %}

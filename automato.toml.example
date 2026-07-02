@@ -1,0 +1,44 @@
+# automato.toml — configuration for automato-server (suno-automato-cli)
+#
+# Copy to ./automato.toml (next to this example) and edit.
+# Precedence: environment variables > automato.toml > built-in defaults.
+# Every key here also has an env override (shown in comments).
+# NO SECRETS other than the optional api_token belong in this file;
+# Suno credentials always live in ~/.config/suno-cli/auth.json (0600).
+
+# Root of the local music library (projects, album manifests, novelty history).
+# env: AUTOMATO_LIBRARY_ROOT
+# default: <repo>/suno-library
+#library_root = "/root/.openclaw/workspace/suno-automato-cli/suno-library"
+
+# Directory for server runtime state (SQLite WAL queue db).
+# env: AUTOMATO_STATE_DIR
+# default: <repo>/server/state
+#state_dir = "/root/.openclaw/workspace/suno-automato-cli/server/state"
+
+# Path to the upstream `suno` CLI binary.
+# env: SUNO_BIN
+# default: <workspace>/bin/suno
+#suno_bin = "/root/.openclaw/workspace/bin/suno"
+
+# Path to suno_prompt_guard.py (the 11-block PromptStyle guard).
+# env: AUTOMATO_PROMPT_GUARD
+# default: <repo>/scripts/suno_prompt_guard.py if present,
+#          else ../suno-cli/scripts/suno_prompt_guard.py (sibling checkout)
+#prompt_guard = "/root/.openclaw/workspace/suno-cli/scripts/suno_prompt_guard.py"
+
+# Bind address/port for the server.
+# env: AUTOMATO_HOST / AUTOMATO_PORT
+#host = "127.0.0.1"
+#port = 8765
+
+# Hard daily cap on generation jobs (credits protection).
+# env: AUTOMATO_MAX_GEN_PER_DAY
+#max_generations_per_day = 40
+
+# Optional bearer token. When set, mutating endpoints (POST /api/v1/generate,
+# job cancel, worker pause/resume, /ui/generate) and the /mcp mount require
+#   Authorization: Bearer <token>
+# Leave empty/commented for open loopback use (the default bind is 127.0.0.1).
+# env: AUTOMATO_API_TOKEN
+#api_token = "change-me-long-random-string"

@@ -1,0 +1,22 @@
+{% if jobs %}
+  {% for j in jobs %}
+  <tr>
+    <td><a href="/jobs/{{ j.id }}"><code>{{ j.id }}</code></a></td>
+    <td class="small muted">{{ j.created_at[:19].replace('T',' ') }}</td>
+    <td>{{ j.title }}</td>
+    <td>{{ j.genre }}</td>
+    <td>
+      {% set s = j.status %}
+      {% if s == 'succeeded' %}<span class="badge b-ok">succeeded</span>
+      {% elif s == 'running' %}<span class="badge b-accent">running</span>
+      {% elif s == 'queued' %}<span class="badge b-muted">queued</span>
+      {% elif s in ('failed','blocked') %}<span class="badge b-err">{{ s }}</span>
+      {% elif s in ('quarantined','needs-review') %}<span class="badge b-warn">{{ s }}</span>
+      {% else %}<span class="badge b-muted">{{ s }}</span>{% endif %}
+    </td>
+    <td class="small muted">{{ j.source }}</td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr><td colspan="6" class="muted">No jobs yet. Submit one from the <a href="/generate">Generate</a> page.</td></tr>
+{% endif %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Overview · Suno Automato{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+<div class="sub">Live system status — auth, credits, worker, queue. Auto-refreshes via SSE.</div>
+
+<div id="status-cards"
+     hx-get="/ui/status-cards"
+     hx-trigger="sse:heartbeat, sse:job, sse:queue, every 30s"
+     hx-ext="sse" sse-connect="/events">
+  {% include "partials/status_cards.html" %}
+</div>
+
+<h2>Recent jobs</h2>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Created</th><th>Title</th><th>Genre</th><th>Status</th><th>Source</th></tr></thead>
+    <tbody id="recent-jobs"
+           hx-get="/ui/jobs-rows?limit=10"
+           hx-trigger="sse:job, sse:queue, every 30s"
+           hx-ext="sse" sse-connect="/events">
+      {% with jobs=jobs %}{% include "partials/jobs_rows.html" %}{% endwith %}
+    </tbody>
+  </table>
+</div>
+<div class="mt small muted">SSE live feed connected at <code>/events</code> · REST API at <code>/api/v1</code> · MCP at <code>/mcp</code></div>
+{% endblock %}

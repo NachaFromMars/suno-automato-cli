@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Library · Suno Automato{% endblock %}
+{% block content %}
+<h1>Library</h1>
+<div class="sub">{{ data.total }} projects in suno-library (files are source of truth).</div>
+
+<form method="get" action="/library" class="flex" style="margin-bottom:16px">
+  <select name="genre" style="max-width:220px" onchange="this.form.submit()">
+    <option value="">All genres</option>
+    {% for g in genres %}<option value="{{ g }}" {{ 'selected' if g == sel_genre }}>{{ g }}</option>{% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Search title / album / style…" style="max-width:320px">
+  <button class="btn btn-ghost btn-sm" type="submit">Search</button>
+</form>
+
+<div class="proj-grid">
+  {% for p in data.projects %}
+  <div class="proj-card">
+    <a href="/library/{{ p.project_id }}">
+      {% if p.cover %}
+        {% set cov_parts = p.cover.split('/') %}
+        <img class="cov" loading="lazy" src="/api/v1/media/{{ p.project_id }}/cover/{{ cov_parts[-1] }}" alt="">
+      {% else %}
+        <div class="cov-ph">♫</div>
+      {% endif %}
+    </a>
+    <div class="body">
+      <div class="t"><a href="/library/{{ p.project_id }}">{{ p.title }}</a></div>
+      <div class="m">{{ p.genre }} · {{ p.take_count }} take{{ 's' if p.take_count != 1 }}{% if p.quarantined_count %} · <span style="color:var(--warn)">{{ p.quarantined_count }} quarantined</span>{% endif %}</div>
+      <div class="m">{{ p.album }}</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="muted">No projects match.</div>
+  {% endfor %}
+</div>
+
+{% if pages > 1 %}
+<div class="flex mt">
+  {% for pg in range(1, pages + 1) %}
+    <a class="badge {{ 'b-accent' if pg == page else 'b-muted' }}"
+       href="/library?page={{ pg }}{{ '&genre=' + sel_genre if sel_genre }}{{ '&q=' + q if q }}">{{ pg }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

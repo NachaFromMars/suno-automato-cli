@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Job {{ job.id }} · Suno Automato{% endblock %}
+{% block content %}
+<h1>Job <code>{{ job.id }}</code></h1>
+<div class="sub">{{ job.title }} · {{ job.genre }} · {{ job.album }}</div>
+
+<div class="cards" style="margin-bottom:20px">
+  <div class="card">
+    <div class="label">Status</div>
+    <div class="value" style="font-size:1rem">
+      {% set s = job.status %}
+      {% if s == 'succeeded' %}<span class="badge b-ok">succeeded</span>
+      {% elif s == 'running' %}<span class="badge b-accent">running</span>
+      {% elif s in ('failed','blocked') %}<span class="badge b-err">{{ s }}</span>
+      {% elif s in ('quarantined','needs-review') %}<span class="badge b-warn">{{ s }}</span>
+      {% else %}<span class="badge b-muted">{{ s }}</span>{% endif %}
+    </div>
+    <div class="hint">{{ job.progress or '' }}</div>
+  </div>
+  <div class="card"><div class="label">Created</div><div class="value" style="font-size:.95rem">{{ job.created_at[:19].replace('T',' ') }}</div><div class="hint">updated {{ job.updated_at[:19].replace('T',' ') }}</div></div>
+  <div class="card"><div class="label">Source</div><div class="value" style="font-size:.95rem">{{ job.source }}</div><div class="hint">instrumental: {{ job.instrumental }}</div></div>
+  <div class="card"><div class="label">Sliders</div><div class="value" style="font-size:.95rem">w={{ job.weirdness }} · si={{ job.style_influence }}</div></div>
+</div>
+
+{% if job.status == 'queued' %}
+<button class="btn btn-danger btn-sm" hx-post="/api/v1/jobs/{{ job.id }}/cancel" hx-swap="none" onclick="setTimeout(()=>location.reload(),300)">✕ Cancel job</button>
+{% endif %}
+
+{% if job.error %}
+<h2>Error</h2>
+<pre class="code" style="border-color: rgba(243,108,108,.4)">{{ job.error }}</pre>
+{% endif %}
+
+{% if job.result and job.result.clip_ids %}
+<h2>Clips</h2>
+<div class="flex">{% for cid in job.result.clip_ids %}<code class="badge b-accent">{{ cid }}</code>{% endfor %}</div>
+{% endif %}
+
+<h2>Style prompt</h2>
+<pre class="code">{{ job.style }}</pre>
+
+<h2>Lyrics</h2>
+<pre class="code">{{ job.lyrics }}</pre>
+
+<h2>Guard report (pre-generation gate)</h2>
+<pre class="code">{{ guard_json }}</pre>
+
+<h2>Postcheck report</h2>
+<pre class="code">{{ postcheck_json if job.postcheck_report else 'not run yet' }}</pre>
+
+<h2>Run result</h2>
+<pre class="code">{{ result_json if job.result else 'not run yet' }}</pre>
+{% endblock %}

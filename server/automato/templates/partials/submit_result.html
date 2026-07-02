@@ -1,0 +1,22 @@
+{% if res.accepted %}
+  <div class="card" style="border-color: rgba(52,211,154,.4)">
+    <span class="badge b-ok">JOB QUEUED</span>
+    Job <a href="/jobs/{{ res.job_id }}"><code>{{ res.job_id }}</code></a> accepted after full guard PASS.
+    Track progress on the <a href="/jobs">Queue</a> page.
+  </div>
+{% else %}
+  <div class="card" style="border-color: rgba(243,108,108,.4)">
+    <span class="badge b-err">REFUSED</span>
+    {{ res.reason }}
+    {% if res.reason == 'guard_blocked' %}
+      — server-side gate blocked this prompt (no credits spent). See failing gates:
+      <ul class="gate-list mt">
+        {% for gname, gate in res.guard_report.gates.items() if not gate.passed %}
+        <li class="gate-fail"><span class="gate-ic">✕</span><b>{{ gname.replace('_',' ') }}</b></li>
+        {% endfor %}
+      </ul>
+    {% elif res.reason == 'daily_generation_cap_reached' %}
+      — {{ res.jobs_today }}/{{ res.cap }} generations today.
+    {% endif %}
+  </div>
+{% endif %}

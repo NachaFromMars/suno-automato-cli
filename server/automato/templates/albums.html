@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Albums · Suno Automato{% endblock %}
+{% block content %}
+<h1>Albums / Playlists</h1>
+<div class="sub">Album manifests with target progress and remote Suno playlist sync state.</div>
+
+<div class="cards" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+  {% for a in albums %}
+  <div class="card">
+    <div class="flex">
+      <b><a href="/albums/{{ a.slug }}">{{ a.name }}</a></b>
+      <div class="grow"></div>
+      <span class="badge b-muted">{{ a.genre }}</span>
+    </div>
+    <div class="prog"><div style="width: {{ (100 * a.track_count / a.target) if a.track_count < a.target else 100 }}%"></div></div>
+    <div class="small muted mt" style="margin-top:8px">
+      {{ a.track_count }}/{{ a.target }} tracks
+      {% if a.track_count >= a.target %}<span class="badge b-ok">COMPLETE</span>{% endif %}
+    </div>
+    <div class="small muted" style="margin-top:6px">
+      {% if a.remote_playlist_id %}
+        <span class="badge b-ok">remote synced</span> <code class="small">{{ a.remote_playlist_id[:8] }}…</code>
+        {% if a.remote_synced_at %}<span class="small">{{ a.remote_synced_at[:19].replace('T',' ') }}</span>{% endif %}
+      {% else %}
+        <span class="badge b-warn">{{ a.remote_album_sync or 'not synced' }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

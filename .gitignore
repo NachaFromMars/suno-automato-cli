@@ -24,3 +24,8 @@ __pycache__/
 
 # Managed local library output; keep code/docs in git, not generated songs.
 suno-library/
+
+# automato-server runtime state
+.venv/
+server/state/
+server/docs-shots/

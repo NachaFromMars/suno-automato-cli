@@ -160,6 +160,9 @@ def quarantine_takes(album, job, clip_ids):
 
 def run(cmd):
     env = dict(os.environ)
+    # F-10: this runner IS the gated path (prompt_guard() runs before generate);
+    # mark the call so suno-lib.sh accepts 'generate' without --force-ungated.
+    env["AUTOMATO_GATED"] = "1"
     # Snap Chromium may start only with sandbox/dev-shm flags; use this when the CLI captcha solver launches Chrome.
     # Root cause of 'Chrome spawned but never opened CDP port': the suno CLI does not
     # inject --no-sandbox, and Chrome refuses to run as root without it. Route through the

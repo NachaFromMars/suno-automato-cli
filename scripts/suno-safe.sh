@@ -8,6 +8,23 @@ if [[ ! -x "$SUNO_BIN" ]]; then
   exit 127
 fi
 
+# F-10: 'generate' spends credits; require the gated-caller marker or explicit override.
+if [[ "${1:-}" == "generate" && "${AUTOMATO_GATED:-}" != "1" ]]; then
+  force=0
+  newargs=()
+  for a in "$@"; do
+    if [[ "$a" == "--force-ungated" ]]; then force=1; else newargs+=("$a"); fi
+  done
+  if [[ $force -ne 1 ]]; then
+    echo "[suno-safe GUARD] REFUSED: ungated 'generate' (bypasses prompt-guard gate, spends credits)." >&2
+    echo "[suno-safe GUARD] Use automato-server / suno-batch-runner.py, or pass --force-ungated to accept the risk." >&2
+    exit 78
+  fi
+  echo "[suno-safe GUARD] *** WARNING: --force-ungated — generating WITHOUT the strict guard gate. ***" >&2
+  export AUTOMATO_GATED=1
+  set -- "${newargs[@]}"
+fi
+
 cmd="${1:-}"
 if [[ -z "$cmd" ]]; then
   cat >&2 <<USAGE

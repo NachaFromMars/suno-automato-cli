@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Generate · Suno Automato{% endblock %}
+{% block content %}
+<h1>Generate</h1>
+<div class="sub">Every submission runs the full strict guard gate first — 11-block PromptStyle precheck, lyrics-check, playlist-route, novelty-check. Submit unlocks only after PASS.</div>
+
+<div x-data="{ w: 62, si: 86, guardPass: false }" class="grid2">
+  <form id="gen-form"
+        hx-post="/ui/generate" hx-target="#submit-result" hx-swap="innerHTML">
+    <label>Title</label>
+    <input type="text" name="title" required placeholder="Song title (also drives the hook check)">
+
+    <label>Album / genre (from real album manifests)</label>
+    <select name="album" id="album-sel" required
+            onchange="const o=this.selectedOptions[0]; document.getElementById('genre-inp').value = o ? o.dataset.genre : '';">
+      <option value="" data-genre="">— select album —</option>
+      {% for a in albums %}
+      <option value="{{ a.name }}" data-genre="{{ a.genre }}">{{ a.name }} · {{ a.genre }} ({{ a.track_count }}/{{ a.target }})</option>
+      {% endfor %}
+    </select>
+    <label>Genre (auto from album)</label>
+    <input type="text" name="genre" id="genre-inp" required readonly placeholder="Auto-filled from album">
+
+    <label>Style prompt (11 required PromptStyle blocks)</label>
+    <textarea name="style" placeholder="Leading Genre DNA: ...; Singer Identity: ...; Vocal Register: ...; Rhythm Section: ...; Signature Motif: ...; Hook Design: ...; Arrangement Map: ...; Instrument Palette: ...; Mood Logic: ...; Mix Target: ...; Strictly Avoid: ..."></textarea>
+
+    <label>Lyrics (full sections; or instrumental section map)</label>
+    <textarea name="lyrics" placeholder="[Intro]&#10;...&#10;[Verse 1]&#10;...&#10;[Pre-Chorus]&#10;...&#10;[Chorus]&#10;...&#10;[Bridge]&#10;...&#10;[Outro]"></textarea>
+
+    <div class="flex mt">
+      <label style="margin:0" class="flex"><input type="checkbox" name="instrumental" style="width:auto"> Instrumental</label>
+      <div class="grow"></div>
+    </div>
+
+    <label>Exclude (negative tags)</label>
+    <input type="text" name="exclude" value="generic stock loop, karaoke backing track, muddy mix, weak hook">
+
+    <div class="grid2">
+      <div>
+        <label>Weirdness: <span x-text="w"></span></label>
+        <input type="range" name="weirdness" min="0" max="100" x-model="w">
+      </div>
+      <div>
+        <label>Style influence: <span x-text="si"></span></label>
+        <input type="range" name="style_influence" min="0" max="100" x-model="si">
+      </div>
+    </div>
+
+    <div class="flex mt">
+      <button type="button" class="btn btn-ghost"
+              hx-post="/ui/validate" hx-include="#gen-form" hx-target="#guard-result" hx-swap="innerHTML">
+        Run guard validation
+      </button>
+      <button type="submit" class="btn" id="submit-btn" disabled title="Run guard validation until PASS to unlock">
+        Submit gated job
+      </button>
+    </div>
+    <div id="submit-result" class="mt"></div>
+  </form>
+
+  <div>
+    <h2 style="margin-top:0">Guard gate preview</h2>
+    <div class="card" id="guard-result">
+      <div class="muted small">Fill the form and press <b>Run guard validation</b>. The preview runs the REAL <code>suno_prompt_guard.py</code> — identical to the submission gate, zero credits spent.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Enable submit only when the last guard validation passed */
+document.body.addEventListener('htmx:afterSwap', function (e) {
+  if (e.detail.target.id === 'guard-result') {
+    const pass = e.detail.target.querySelector('[data-guard-pass="true"]') !== null;
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = !pass;
+    btn.title = pass ? 'Guard PASS — submit spends credits' : 'Run guard validation until PASS to unlock';
+  }
+});
+</script>
+{% endblock %}

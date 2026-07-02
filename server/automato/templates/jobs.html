@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Queue / Jobs · Suno Automato{% endblock %}
+{% block content %}
+<h1>Queue / Jobs</h1>
+<div class="sub">Job queue with guard + postcheck outcomes. Live via SSE.</div>
+
+<div class="flex" style="margin-bottom:14px">
+  <span class="badge b-accent">queue depth: {{ queue_depth }}</span>
+  {% if worker_alive %}
+    {% if worker_paused %}<span class="badge b-warn">worker paused</span>{% else %}<span class="badge b-ok">worker running</span>{% endif %}
+  {% else %}<span class="badge b-err">worker dead</span>{% endif %}
+  <div class="grow"></div>
+  <button class="btn btn-ghost btn-sm" hx-post="/api/v1/worker/pause" hx-swap="none" onclick="setTimeout(()=>location.reload(),300)">⏸ Pause worker</button>
+  <button class="btn btn-ghost btn-sm" hx-post="/api/v1/worker/resume" hx-swap="none" onclick="setTimeout(()=>location.reload(),300)">▶ Resume worker</button>
+</div>
+
+<div class="flex" style="margin-bottom:10px">
+  {% for s in ['', 'queued', 'running', 'succeeded', 'failed', 'quarantined', 'needs-review', 'cancelled'] %}
+    <a class="badge {{ 'b-accent' if filter_status == s else 'b-muted' }}" href="/jobs{{ '?status=' + s if s }}">{{ s or 'all' }}</a>
+  {% endfor %}
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Created</th><th>Title</th><th>Genre</th><th>Status</th><th>Source</th></tr></thead>
+    <tbody hx-get="/ui/jobs-rows?limit=100{{ '&status=' + filter_status if filter_status }}"
+           hx-trigger="sse:job, sse:queue, every 20s"
+           hx-ext="sse" sse-connect="/events">
+      {% include "partials/jobs_rows.html" %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

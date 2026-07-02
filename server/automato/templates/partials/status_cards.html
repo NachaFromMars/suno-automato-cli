@@ -1,0 +1,39 @@
+<div class="cards">
+  <div class="card">
+    <div class="label">Suno auth / credits</div>
+    {% if status.auth_credits.ok %}
+      <div class="value">{{ status.auth_credits.credits }}</div>
+      <div class="hint">{{ status.auth_credits.total_credits_left }} total left · {{ status.auth_credits.plan }} <span class="badge b-ok">AUTH OK</span></div>
+    {% elif status.auth_credits.get('skipped') %}
+      <div class="value">—</div><div class="hint"><span class="badge b-muted">probe skipped</span></div>
+    {% else %}
+      <div class="value">✕</div>
+      <div class="hint"><span class="badge b-err">AUTH FAIL</span> {{ status.auth_credits.get('error','')[:80] }}</div>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="label">Worker</div>
+    <div class="value">{% if status.worker_alive %}{% if worker_paused %}⏸{% else %}●{% endif %}{% else %}✕{% endif %}</div>
+    <div class="hint">
+      {% if status.worker_alive %}
+        {% if worker_paused %}<span class="badge b-warn">PAUSED</span>{% else %}<span class="badge b-ok">RUNNING</span>{% endif %}
+      {% else %}<span class="badge b-err">DEAD</span>{% endif %}
+      {% if status.generation_lock_held %}<span class="badge b-warn">gen lock held</span>{% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">Queue depth</div>
+    <div class="value">{{ status.queue_depth }}</div>
+    <div class="hint">{{ status.jobs_today }}/{{ status.max_generations_per_day }} generations today</div>
+  </div>
+  <div class="card">
+    <div class="label">Xvfb display</div>
+    <div class="value">{% if status.xvfb.alive %}✓{% else %}✕{% endif %}</div>
+    <div class="hint">{{ status.xvfb.display }} {% if status.xvfb.alive %}<span class="badge b-ok">ALIVE</span>{% else %}<span class="badge b-err">DEAD</span>{% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="label">Guard gate</div>
+    <div class="value">{{ status.guard_stats.passed }}<span class="muted" style="font-size:.9rem">/{{ status.guard_stats.total }}</span></div>
+    <div class="hint">{{ status.guard_stats.failed }} blocked runs</div>
+  </div>
+</div>

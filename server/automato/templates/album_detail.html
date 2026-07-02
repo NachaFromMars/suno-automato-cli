@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ a.name }} · Suno Automato{% endblock %}
+{% block content %}
+<h1>{{ a.name }}</h1>
+<div class="sub">{{ a.genre }} · {{ a.get('track_count', a.get('tracks',[])|length) }} tracks · updated {{ (a.get('updated_at') or '')[:19].replace('T',' ') }}</div>
+
+<div class="cards" style="margin-bottom:18px">
+  <div class="card"><div class="label">Tracks</div><div class="value">{{ a.get('track_count', a.get('tracks',[])|length) }}</div><div class="hint">target 8</div></div>
+  <div class="card">
+    <div class="label">Remote playlist</div>
+    <div class="value" style="font-size:.85rem">{% if a.get('remote_playlist_id') %}<code>{{ a.remote_playlist_id }}</code>{% else %}—{% endif %}</div>
+    <div class="hint">{{ a.get('remote_album_sync','') }}{% if a.get('remote_synced_at') %} · {{ a.remote_synced_at[:19].replace('T',' ') }}{% endif %}</div>
+  </div>
+</div>
+
+<h2>Tracks</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Title</th><th>Take</th><th>Suno ID</th><th>Status</th><th>Scores</th></tr></thead>
+  <tbody>
+    {% for t in a.get('tracks', []) %}
+    <tr>
+      <td class="muted">{{ loop.index }}</td>
+      <td>{{ t.get('title','') }}</td>
+      <td class="muted">{{ t.get('take_no','') }}</td>
+      <td><code class="small">{{ t.get('suno_id','') }}</code></td>
+      <td><span class="badge b-muted">{{ t.get('status','') }}</span></td>
+      <td class="small muted">style {{ t.get('style_score','—') }} · lyric {{ t.get('lyric_score','—') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="muted">Manifest has no track list.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="mt"><a href="/albums">← back to albums</a></div>
+{% endblock %}

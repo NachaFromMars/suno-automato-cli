@@ -1,0 +1,27 @@
+services:
+  automato:
+    build: .
+    image: suno-automato:latest
+    container_name: suno-automato
+    ports:
+      # keep it loopback-only unless you set api_token + reverse-proxy TLS
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - ./suno-library:/data/suno-library          # music library (source of truth)
+      - automato-state:/data/state                 # SQLite queue + Xauthority
+      # Suno CLI binary (host-installed; not shipped in the image):
+      - ${SUNO_BIN:-~/.local/bin/suno}:/app/bin/suno:ro
+      # Suno credentials, read-only (created by `suno auth` on the host):
+      - ~/.config/suno-cli/auth.json:/root/.config/suno-cli/auth.json:ro
+      # Optional: config file (copy automato.toml.example → automato.toml first)
+      # - ./automato.toml:/app/automato.toml:ro
+    environment:
+      AUTOMATO_HOST: 0.0.0.0
+      AUTOMATO_PORT: "8765"
+      # AUTOMATO_API_TOKEN: "change-me"            # enable bearer auth
+      # AUTOMATO_MAX_GEN_PER_DAY: "40"
+    restart: unless-stopped
+    shm_size: 1g                                    # Chrome needs a real /dev/shm
+
+volumes:
+  automato-state:
