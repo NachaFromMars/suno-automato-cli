@@ -1,0 +1,31 @@
+{% if res and res.accepted == false %}
+  <div class="badge b-err">{{ res.reason }}</div>
+{% elif res and res.accepted %}
+  <div class="badge b-ok">Đã bắt đầu: {{ res.requested }} lượt</div>
+{% endif %}
+<div class="flex" style="margin-top:8px">
+  <span class="badge {{ 'b-accent' if st.running else 'b-muted' }}">
+    {{ 'ĐANG CHẠY' if st.running else 'nghỉ' }}
+  </span>
+  {% if st.stop_requested %}<span class="badge b-warn">đang dừng…</span>{% endif %}
+</div>
+<div class="mt small">
+  <div class="flex"><span class="muted grow">Yêu cầu</span><b>{{ st.requested }}</b></div>
+  <div class="flex"><span class="muted grow">Còn lại</span><b>{{ st.remaining }}</b></div>
+  <div class="flex"><span class="muted grow">Đã xếp hàng</span><b>{{ st.enqueued|length }}</b></div>
+  <div class="flex"><span class="muted grow">Bỏ qua</span><b>{{ st.skipped|length }}</b></div>
+  {% if st.current %}<div class="flex"><span class="muted grow">Bước hiện tại</span><span>{{ st.current }}</span></div>{% endif %}
+  {% if st.last_error %}<div class="badge b-err mt">{{ st.last_error }}</div>{% endif %}
+</div>
+{% if st.enqueued %}
+<div class="mt small muted">Job đã tạo:</div>
+<div class="flex small">
+  {% for j in st.enqueued %}<a href="/jobs/{{ j }}" class="badge b-accent">{{ j[:8] }}</a>{% endfor %}
+</div>
+{% endif %}
+{% if st.skipped %}
+<div class="mt small muted">Bỏ qua:</div>
+<ul class="small muted" style="margin:4px 0 0; padding-left:18px">
+  {% for s in st.skipped %}<li>{{ s.reason }}{% if s.album %} — {{ s.album }}{% endif %}</li>{% endfor %}
+</ul>
+{% endif %}

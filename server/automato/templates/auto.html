@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Auto · Suno Automato{% endblock %}
+{% block content %}
+<h1>Auto Generation</h1>
+<div class="sub">Tự động sinh concept mới (seed-engine) → chạy full guard → xếp vào hàng đợi gated. Mỗi lượt là một job qua đúng 1 chokepoint, dùng chung khóa với CLI nên không gen trùng.</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2 style="margin-top:4px">Chạy Auto</h2>
+    <form hx-post="/ui/auto-start" hx-target="#auto-status" hx-swap="innerHTML">
+      <label for="count">Số lần gen tự động (1–{{ max_per_day }})</label>
+      <input type="number" id="count" name="count" value="4" min="1" max="{{ max_per_day }}">
+
+      <label for="genre">Thể loại (tùy chọn)</label>
+      <select id="genre" name="genre">
+        <option value="">— Tự chọn album còn thiếu —</option>
+        {% for g in genres %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+      </select>
+
+      <label for="album">Album cụ thể (tùy chọn)</label>
+      <select id="album" name="album">
+        <option value="">— Ưu tiên album ít track nhất —</option>
+        {% for a in albums %}
+          {% if a.track_count < a.target %}
+          <option value="{{ a.slug }}">{{ a.name }} ({{ a.track_count }}/{{ a.target }})</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+
+      <div class="flex mt">
+        <button type="submit" class="btn">▶ Bắt đầu Auto</button>
+        <button type="button" class="btn btn-danger btn-sm"
+                hx-post="/ui/auto-stop" hx-target="#auto-status" hx-swap="innerHTML">■ Dừng</button>
+      </div>
+    </form>
+    <div class="small muted mt">Chỉ tốn credit khi worker thực thi job trong hàng đợi. Tạm dừng worker (trang Jobs) để thử cơ chế mà không tốn credit.</div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:4px">Trạng thái</h2>
+    <div id="auto-status"
+         hx-get="/ui/auto-status" hx-trigger="load, every 4s" hx-swap="innerHTML">
+      {% include "partials/auto_status.html" %}
+    </div>
+  </div>
+</div>
+
+<h2>Tiến độ album</h2>
+<div class="cards" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
+  {% for a in albums %}
+  <div class="card">
+    <div class="flex">
+      <b>{{ a.name }}</b><div class="grow"></div>
+      <span class="badge b-muted">{{ a.genre }}</span>
+    </div>
+    <div class="prog"><div style="width: {{ (100 * a.track_count / a.target) if a.track_count < a.target else 100 }}%"></div></div>
+    <div class="small muted mt" style="margin-top:8px">
+      {{ a.track_count }}/{{ a.target }}
+      {% if a.track_count >= a.target %}<span class="badge b-ok">ĐỦ</span>
+      {% else %}<span class="badge b-warn">thiếu {{ a.target - a.track_count }}</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

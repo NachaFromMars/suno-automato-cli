@@ -18,6 +18,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
+from . import auto as auto_mode
 from . import config, engine
 from .db import get_db
 from .mcp_tools import mcp
@@ -59,7 +60,11 @@ _PROTECTED_ROUTES = {
     ("POST", "/api/v1/generate"),
     ("POST", "/api/v1/worker/pause"),
     ("POST", "/api/v1/worker/resume"),
+    ("POST", "/api/v1/auto/start"),
+    ("POST", "/api/v1/auto/stop"),
     ("POST", "/ui/generate"),
+    ("POST", "/ui/auto-start"),
+    ("POST", "/ui/auto-stop"),
 }
 
 def _needs_auth(method: str, path: str) -> bool:
@@ -98,6 +103,11 @@ class GenerateRequest(ValidateRequest):
     exclude: str = ""
     weirdness: int = Field(62, ge=0, le=100)
     style_influence: int = Field(86, ge=0, le=100)
+
+class AutoStartRequest(BaseModel):
+    count: int = Field(1, ge=1, le=100)
+    album: Optional[str] = None
+    genre: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +148,22 @@ async def api_generate(req: GenerateRequest):
         return JSONResponse(res, status_code=202)
     return JSONResponse(res, status_code=422)
 
+
+@app.post("/api/v1/auto/start")
+async def api_auto_start(req: AutoStartRequest):
+    res = await asyncio.to_thread(auto_mode.start, req.count, req.album, req.genre)
+    worker.emit({"type": "auto", "event": "auto_start", "requested": req.count})
+    return JSONResponse(res, status_code=202 if res.get("accepted") else 409)
+
+@app.get("/api/v1/auto/status")
+async def api_auto_status():
+    return await asyncio.to_thread(auto_mode.status)
+
+@app.post("/api/v1/auto/stop")
+async def api_auto_stop():
+    res = await asyncio.to_thread(auto_mode.stop)
+    worker.emit({"type": "auto", "event": "auto_stop"})
+    return res
 
 @app.get("/api/v1/jobs")
 async def api_jobs(status: Optional[str] = None, limit: int = Query(50, le=200), offset: int = 0):
@@ -354,6 +380,36 @@ async def ui_reports(request: Request, show: str = "all"):
     return _page(request, "reports.html", "reports", reports=reports, show=show,
                  stats=get_db().guard_stats(), novelty=novelty)
 
+
+@app.get("/auto", response_class=HTMLResponse)
+async def ui_auto(request: Request):
+    albums = await asyncio.to_thread(engine.list_albums)
+    st = await asyncio.to_thread(auto_mode.status)
+    genres = sorted({(a.get("genre") or "") for a in albums if a.get("genre")})
+    return _page(request, "auto.html", "auto", albums=albums, st=st, genres=genres,
+                 max_per_day=config.MAX_GENERATIONS_PER_DAY)
+
+@app.post("/ui/auto-start", response_class=HTMLResponse)
+async def ui_auto_start(request: Request, count: int = Form(1),
+                        album: Optional[str] = Form(None), genre: Optional[str] = Form(None)):
+    album = album or None
+    genre = genre or None
+    res = await asyncio.to_thread(auto_mode.start, count, album, genre)
+    worker.emit({"type": "auto", "event": "auto_start", "requested": count})
+    st = await asyncio.to_thread(auto_mode.status)
+    return templates.TemplateResponse(request, "partials/auto_status.html", {"st": st, "res": res})
+
+@app.post("/ui/auto-stop", response_class=HTMLResponse)
+async def ui_auto_stop(request: Request):
+    res = await asyncio.to_thread(auto_mode.stop)
+    worker.emit({"type": "auto", "event": "auto_stop"})
+    st = await asyncio.to_thread(auto_mode.status)
+    return templates.TemplateResponse(request, "partials/auto_status.html", {"st": st, "res": res})
+
+@app.get("/ui/auto-status", response_class=HTMLResponse)
+async def ui_auto_status(request: Request):
+    st = await asyncio.to_thread(auto_mode.status)
+    return templates.TemplateResponse(request, "partials/auto_status.html", {"st": st, "res": None})
 
 # ---- HTMX partials (real endpoints; return HTML fragments) ----
 @app.post("/ui/validate", response_class=HTMLResponse)

@@ -9,19 +9,30 @@
 <script src="/static/sse.js"></script>
 <script src="/static/alpine.min.js" defer></script>
 </head>
-<body>
+<body class="no-js" x-data="{ navOpen: false }">
+<script>document.body.classList.remove('no-js');</script>
+<noscript><style>
+  .mobile-topbar { display: none !important; }
+  .sidebar { display: block !important; position: static !important; height: auto !important; transform: none !important; }
+</style></noscript>
+<header class="mobile-topbar">
+  <button type="button" class="nav-toggle" aria-label="Menu" @click="navOpen = !navOpen">☰</button>
+  <div class="brand">suno<span class="dot">·</span>automato</div>
+</header>
 <div class="shell">
-  <aside class="sidebar">
+  <div class="nav-scrim" x-show="navOpen" @click="navOpen = false" x-cloak></div>
+  <aside class="sidebar" :class="navOpen ? 'open' : ''">
     <div>
       <div class="brand">suno<span class="dot">·</span>automato</div>
       <div class="brand-sub">guarded music factory</div>
     </div>
-    <nav class="nav">
+    <nav class="nav" @click="navOpen = false">
       <a href="/" class="{{ 'active' if active=='overview' }}">⌂ Overview</a>
       <a href="/generate" class="{{ 'active' if active=='generate' }}">♫ Generate</a>
       <a href="/jobs" class="{{ 'active' if active=='jobs' }}">≡ Queue / Jobs</a>
       <a href="/library" class="{{ 'active' if active=='library' }}">▤ Library</a>
       <a href="/albums" class="{{ 'active' if active=='albums' }}">◈ Albums</a>
+      <a href="/auto" class="{{ 'active' if active=='auto' }}">↻ Auto</a>
       <a href="/reports" class="{{ 'active' if active=='reports' }}">▣ Guard Reports</a>
     </nav>
   </aside>

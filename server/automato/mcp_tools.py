@@ -9,6 +9,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from . import auto as auto_mode
 from . import engine
 from .db import get_db
 
@@ -89,3 +90,20 @@ def suno_library_search(query: str = "", genre: str = "", album: str = "",
 def suno_albums() -> list[dict]:
     """All album manifests with track counts and remote playlist sync state."""
     return engine.list_albums()
+
+@mcp.tool()
+def suno_auto_start(count: int = 1, album: str = "", genre: str = "") -> dict:
+    """Start auto-generation: enqueue `count` seed-generated jobs (each runs the full
+    guard). Optional `album` (slug) or `genre` filter; default picks albums under target.
+    Jobs execute through the same gated worker — credits spent only on execution."""
+    return auto_mode.start(count, album or None, genre or None)
+
+@mcp.tool()
+def suno_auto_status() -> dict:
+    """Current auto-session status: running, remaining, enqueued job ids, skipped, albums under target."""
+    return auto_mode.status()
+
+@mcp.tool()
+def suno_auto_stop() -> dict:
+    """Stop the auto session after the current step; no further jobs enqueued."""
+    return auto_mode.stop()

@@ -19,7 +19,7 @@ SERVER_DIR = Path(__file__).resolve().parents[1]          # .../suno-automato-cl
 REPO_ROOT = SERVER_DIR.parent                              # .../suno-automato-cli
 WORKSPACE = REPO_ROOT.parent                               # .../workspace
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 def _load_toml() -> dict:
